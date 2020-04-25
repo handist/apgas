@@ -1,7 +1,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.github.PatFin</groupId>
-  <artifactId>handist-apgas</artifactId>
+  <artifactId>apgas</artifactId>
   <version>0.0.1</version>
   <name>Apgas for Java</name>
   <description>Fork from github.com/x10-lang/apgas</description>
@@ -11,6 +11,13 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
   </properties>
+  
+  <repositories>
+	<repository>
+	    <id>jitpack.io</id>
+	    <url>https://jitpack.io</url>
+	</repository>
+  </repositories>
   
   <dependencies>
       <dependency>
@@ -24,11 +31,9 @@
       <version>3.0.3</version>
     </dependency>
     <dependency>
-      <groupId>mpi</groupId>
-      <artifactId>mpiJava</artifactId>
-      <version>1.2.7</version>
-      <scope>system</scope>
-      <systemPath>${project.basedir}/src/main/resources/mpi.jar</systemPath>
+      <groupId>com.github.PatFin</groupId>
+      <artifactId>mpj</artifactId>
+      <version>master-SNAPSHOT</version>
     </dependency>
   </dependencies>
   
@@ -54,6 +59,7 @@
       <plugin>  <!-- Create sources.jar -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-source-plugin</artifactId>
+        <version>3.2.0</version>
         <executions>
           <execution>
             <id>attach-sources</id>
