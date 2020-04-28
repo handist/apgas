@@ -31,7 +31,7 @@
       <version>3.0.3</version>
     </dependency>
     <dependency>
-      <groupId>com.github.PatFin</groupId>
+      <groupId>com.github.handist</groupId>
       <artifactId>mpj</artifactId>
       <version>master-SNAPSHOT</version>
     </dependency>
