@@ -33,7 +33,8 @@
     <dependency>
       <groupId>com.github.handist</groupId>
       <artifactId>mpj</artifactId>
-      <version>master-SNAPSHOT</version>
+      <version>v1</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
   
