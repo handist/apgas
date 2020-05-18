@@ -32,8 +32,8 @@
     </dependency>
     <dependency>
       <groupId>com.github.handist</groupId>
-      <artifactId>mpj</artifactId>
-      <version>v1</version>
+      <artifactId>mpijava</artifactId>
+      <version>v1.2.7</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
