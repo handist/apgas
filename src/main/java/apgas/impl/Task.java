@@ -20,6 +20,7 @@ import java.util.concurrent.RecursiveAction;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.KryoSerializable;
+import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 
@@ -219,7 +220,8 @@ final class Task extends RecursiveAction
   public void write(Kryo kryo, Output output) {
     kryo.writeClassAndObject(output, finish);
     output.writeInt(parent);
-    kryo.writeClassAndObject(output, f);
+    ClosureSerializer cs = new ClosureSerializer();
+    cs.write(kryo, output, f);
   }
 
   @Override
@@ -227,7 +229,8 @@ final class Task extends RecursiveAction
     finish = (Finish) kryo.readClassAndObject(input);
     parent = input.readInt();
     try {
-      f = (Job) kryo.readClassAndObject(input);
+	ClosureSerializer cs = new ClosureSerializer();
+	f = (Job)cs.read(kryo, input, Job.class);
     } catch (final Throwable e) {
       if (GlobalRuntimeImpl.getRuntime().verboseSerialization
           && !(e instanceof DeadPlaceException)) {

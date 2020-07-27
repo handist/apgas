@@ -50,9 +50,8 @@ class KryoSerializer implements StreamSerializer<Object> {
       kryo.register(Place.class);
       kryo.register(GlobalID.class);
       kryo.register(java.lang.invoke.SerializedLambda.class);
+      kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
       try {
-        kryo.register(Class.forName(Kryo.class.getName() + "$Closure"),
-            new ClosureSerializer());
         kryo.register(Class
             .forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
       } catch (final ClassNotFoundException e) {
