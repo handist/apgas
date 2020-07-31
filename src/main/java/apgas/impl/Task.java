@@ -220,8 +220,7 @@ final class Task extends RecursiveAction
   public void write(Kryo kryo, Output output) {
     kryo.writeClassAndObject(output, finish);
     output.writeInt(parent);
-    ClosureSerializer cs = new ClosureSerializer();
-    cs.write(kryo, output, f);
+    kryo.writeClassAndObject(output, f);
   }
 
   @Override
@@ -229,8 +228,7 @@ final class Task extends RecursiveAction
     finish = (Finish) kryo.readClassAndObject(input);
     parent = input.readInt();
     try {
-	ClosureSerializer cs = new ClosureSerializer();
-	f = (Job)cs.read(kryo, input, Job.class);
+      f = (Job) kryo.readClassAndObject(input);
     } catch (final Throwable e) {
       if (GlobalRuntimeImpl.getRuntime().verboseSerialization
           && !(e instanceof DeadPlaceException)) {

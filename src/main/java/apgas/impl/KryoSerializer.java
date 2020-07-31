@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 
+import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -44,7 +45,7 @@ class KryoSerializer implements StreamSerializer<Object> {
       };
       kryo.addDefaultSerializer(DefaultFinish.class,
           new DefaultFinishSerializer());
-      kryo.setInstantiatorStrategy(new SerializingInstantiatorStrategy());
+      kryo.setInstantiatorStrategy(new MyInstantiatorStrategy());      
       kryo.register(Task.class);
       kryo.register(UncountedTask.class);
       kryo.register(Place.class);
@@ -126,4 +127,16 @@ class KryoSerializer implements StreamSerializer<Object> {
       return (DefaultFinish) f.readResolve();
     }
   }
+  static private class MyInstantiatorStrategy extends SerializingInstantiatorStrategy {
+    private Kryo.DefaultInstantiatorStrategy forCols = new Kryo.DefaultInstantiatorStrategy();
+    public MyInstantiatorStrategy() {}
+    public <T> ObjectInstantiator<T> newInstantiatorOf(Class<T> type) {
+      if(java.util.Collection.class.isAssignableFrom(type)
+	 || java.util.Map.class.isAssignableFrom(type)) {
+        return forCols.newInstantiatorOf(type);
+      } else {
+        return super.newInstantiatorOf(type);
+      }
+    }
+  }    
 }
