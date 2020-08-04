@@ -35,7 +35,7 @@ public class KryoSerializer implements StreamSerializer<Object> {
   public static void registerClass(Class clazz, Serializer serializer) {
     additionalRegistrations.put(clazz, serializer); 
   } 
-  private static InstantiatorStrategy instantiatorStrategy = DefaultForColInstantiatorStrategy();
+  private static InstantiatorStrategy instantiatorStrategy = new DefaultForColInstantiatorStrategy();
   public static void setInstantiatorStrategy(InstantiatorStrategy strategy) {
     instantiatorStrategy = strategy;     
   }
