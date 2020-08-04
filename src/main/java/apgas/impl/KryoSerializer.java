@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
+import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.instantiator.ObjectInstantiator;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
@@ -22,12 +24,22 @@ import com.hazelcast.nio.serialization.StreamSerializer;
 import apgas.Place;
 import apgas.util.GlobalID;
 import apgas.util.PlaceLocalObject;
+import apgas.util.SerializableWithReplace;
 
 /**
  * The {@link KryoSerializer} implements serialization using Kryo.
  *
  */
-class KryoSerializer implements StreamSerializer<Object> {
+public class KryoSerializer implements StreamSerializer<Object> {
+  private static HashMap<Class, Serializer> additionalRegistrations =  new HashMap<>();
+  public static void registerClass(Class clazz, Serializer serializer) {
+    additionalRegistrations.put(clazz, serializer); 
+  } 
+  private static InstantiatorStrategy instantiatorStrategy = DefaultForColInstantiatorStrategy();
+  public static void setInstantiatorStrategy(InstantiatorStrategy strategy) {
+    instantiatorStrategy = strategy;     
+  }
+
   private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
     @Override
     protected Kryo initialValue() {
@@ -45,7 +57,9 @@ class KryoSerializer implements StreamSerializer<Object> {
       };
       kryo.addDefaultSerializer(DefaultFinish.class,
           new DefaultFinishSerializer());
-      kryo.setInstantiatorStrategy(new MyInstantiatorStrategy());      
+      kryo.addDefaultSerializer(SerializableWithReplace.class,
+          new CustomSerializer());
+      kryo.setInstantiatorStrategy(instantiatorStrategy);
       kryo.register(Task.class);
       kryo.register(UncountedTask.class);
       kryo.register(Place.class);
@@ -57,6 +71,13 @@ class KryoSerializer implements StreamSerializer<Object> {
             .forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
       } catch (final ClassNotFoundException e) {
       }
+      additionalRegistrations.forEach((Class clazz, Serializer serializer)-> {
+        if(serializer==null) {
+          kryo.register(clazz);
+        } else {
+          kryo.register(clazz, serializer);
+        }
+      });
       return kryo;
     }
   };
@@ -127,15 +148,21 @@ class KryoSerializer implements StreamSerializer<Object> {
       return (DefaultFinish) f.readResolve();
     }
   }
-  static private class MyInstantiatorStrategy extends SerializingInstantiatorStrategy {
+
+  public static class DefaultForColInstantiatorStrategy implements InstantiatorStrategy {
     private Kryo.DefaultInstantiatorStrategy forCols = new Kryo.DefaultInstantiatorStrategy();
-    public MyInstantiatorStrategy() {}
+    private SerializingInstantiatorStrategy ser = new SerializingInstantiatorStrategy();
+    public DefaultForColInstantiatorStrategy() {
+      forCols.setFallbackInstantiatorStrategy(ser);
+    }
     public <T> ObjectInstantiator<T> newInstantiatorOf(Class<T> type) {
-      if(java.util.Collection.class.isAssignableFrom(type)
-	 || java.util.Map.class.isAssignableFrom(type)) {
+      if(SerializableWithReplace.class.isAssignableFrom(type)) {
+        return ser.newInstantiatorOf(type);
+      } else if(java.util.Collection.class.isAssignableFrom(type)
+               || java.util.Map.class.isAssignableFrom(type)) {
         return forCols.newInstantiatorOf(type);
       } else {
-        return super.newInstantiatorOf(type);
+        return ser.newInstantiatorOf(type);
       }
     }
   }    
