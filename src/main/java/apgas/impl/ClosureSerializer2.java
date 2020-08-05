@@ -6,6 +6,11 @@ import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
 import com.esotericsoftware.kryo.serializers.ClosureSerializer;
 
+/**
+ * This class is a wrapper for ClosureSerializer in Kryo 4.0.2.
+ * The ClosureSerializer uses RuntimeException, this makes the exception chain longer.
+ *  This class repacks exceptions to KryoException (as in R5.0.0) to shorten the exception chain.
+ */
 public class ClosureSerializer2 extends ClosureSerializer {
     public ClosureSerializer2 () {
 	super();
