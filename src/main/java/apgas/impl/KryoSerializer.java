@@ -65,7 +65,7 @@ public class KryoSerializer implements StreamSerializer<Object> {
       kryo.register(Place.class);
       kryo.register(GlobalID.class);
       kryo.register(java.lang.invoke.SerializedLambda.class);
-      kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer());
+      kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer2());
       try {
         kryo.register(Class
             .forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
@@ -165,5 +165,5 @@ public class KryoSerializer implements StreamSerializer<Object> {
         return ser.newInstantiatorOf(type);
       }
     }
-  }    
+  }
 }
