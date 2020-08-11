@@ -166,7 +166,7 @@ final public class MPILauncher implements Launcher {
 		// Sets the launcher to be of MPILauncher class. This will make the apgas
 		// runtime use the MPILauncher shutdown method when the apgas shutdown
 		// method is launched
-		System.setProperty(Config.APGAS_LAUNCHER, "handist.collections.mpi.MPILauncher");
+		System.setProperty(Config.APGAS_LAUNCHER, MPILauncher.class.getCanonicalName());
 
 		// Sets the APGAS_VERBOSE_SERIALIZATION to "true"
 		// System.setProperty(Configuration.APGAS_VERBOSE_SERIALIZATION, "true");
