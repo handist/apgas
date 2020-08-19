@@ -12,6 +12,7 @@
 package apgas.impl;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -44,257 +45,299 @@ import apgas.util.GlobalID;
  * The finish body counts as one local task.
  */
 final class DefaultFinish implements Serializable, Finish {
-  private static final long serialVersionUID = 3789869778188598267L;
+	/**
+	 * A factory producing {@link DefaultFinish} instances.
+	 */
+	static class Factory extends Finish.Factory {
+		@Override
+		DefaultFinish make(Finish parent) {
+			return new DefaultFinish();
+		}
+	}
 
-  /**
-   * A factory producing {@link DefaultFinish} instances.
-   */
-  static class Factory extends Finish.Factory {
-    @Override
-    DefaultFinish make(Finish parent) {
-      return new DefaultFinish();
-    }
-  }
+	private static final long serialVersionUID = 3789869778188598267L;
 
-  /**
-   * The {@link GlobalID} instance for this finish construct.
-   * <p>
-   * Null until the finish object is first serialized.
-   */
-  GlobalID id;
+	private static final Field suppressedExceptions_Field;
+	private static final Object throwableSentinel;
 
-  /**
-   * A multi-purpose task counter.
-   * <p>
-   * This counter counts:
-   * <ul>
-   * <li>all tasks for a local finish</li>
-   * <li>places with non-zero task counts for a root finish</li>
-   * <li>local task count for a remote finish</li>
-   * </ul>
-   */
-  private transient int count;
+	static {
+		Field suppressedExceptions = null;
+		Object emptyThrowableList = null;
+		try {
+			suppressedExceptions = Throwable.class.getDeclaredField("suppressedExceptions");
+			Field suppressedSentinel = Throwable.class.getDeclaredField("SUPPRESSED_SENTINEL");
+			suppressedExceptions.setAccessible(true);
+			suppressedSentinel.setAccessible(true);
+			emptyThrowableList = suppressedSentinel.get(null);
+		} catch (IllegalAccessException | IllegalArgumentException | NoSuchFieldException | SecurityException e) {
+			e.printStackTrace();
+		}
+		suppressedExceptions_Field = suppressedExceptions;
+		throwableSentinel = emptyThrowableList;
+	}
 
-  /**
-   * Per-place count of task spawned minus count of terminated tasks.
-   * <p>
-   * Null until a remote task is spawned.
-   */
-  private transient int counts[];
+	/**
+	 * Recursively check and fixes the suppressed exceptions of the given Throwable.
+	 * 
+	 * @param t throwable to check
+	 */
+	private static void fixSuppressedExceptions(Throwable t) {
+		try {
+			for (Throwable st : t.getSuppressed()) {// getSuppressed may throw NPE
+				fixSuppressedExceptions(st); // recursively make the check
+			}
+		} catch (NullPointerException e) {
+			// The throwable "t"'s suppressed exceptions member needs to be fixed
+			try {
+				suppressedExceptions_Field.set(t, throwableSentinel);
+			} catch (IllegalArgumentException | IllegalAccessException e1) {
+				e1.printStackTrace();
+			}
+		}
+	}
 
-  /**
-   * Uncaught exceptions collected by this finish construct.
-   */
-  private transient List<Throwable> exceptions;
+	/**
+	 * A multi-purpose task counter.
+	 * <p>
+	 * This counter counts:
+	 * <ul>
+	 * <li>all tasks for a local finish</li>
+	 * <li>places with non-zero task counts for a root finish</li>
+	 * <li>local task count for a remote finish</li>
+	 * </ul>
+	 */
+	private transient int count;
 
-  /**
-   * Constructs a finish instance.
-   */
-  DefaultFinish() {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    spawn(here);
-  }
+	/**
+	 * Per-place count of task spawned minus count of terminated tasks.
+	 * <p>
+	 * Null until a remote task is spawned.
+	 */
+	private transient int counts[];
 
-  @Override
-  public synchronized void submit(int p) {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    if (id != null && id.home.id != here) {
-      // remote finish
-      count++;
-    }
-  }
+	/**
+	 * Uncaught exceptions collected by this finish construct.
+	 */
+	private transient List<Throwable> exceptions;
 
-  @Override
-  public synchronized void spawn(int p) {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    if (id == null || id.home.id == here) {
-      // local or root finish
-      if (counts == null) {
-        if (here == p) {
-          count++;
-          return;
-        }
-        counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
-        counts[here] = count;
-        count = 1;
-      }
-      if (p >= counts.length) {
-        resize(p + 1);
-      }
-      if (counts[p]++ == 0) {
-        count++;
-      }
-      if (counts[p] == 0) {
-        --count;
-      }
-    } else {
-      // remote finish
-      if (p >= counts.length) {
-        resize(p + 1);
-      }
-      counts[p]++;
-    }
-  }
+	/**
+	 * The {@link GlobalID} instance for this finish construct.
+	 * <p>
+	 * Null until the finish object is first serialized.
+	 */
+	GlobalID id;
 
-  @Override
-  public synchronized void unspawn(int p) {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    if (id == null || id.home.id == here) {
-      // root finish
-      if (counts == null) {
-        // task must have been local
-        --count;
-      } else {
-        if (counts[p] == 0) {
-          count++;
-        }
-        if (--counts[p] == 0) {
-          --count;
-        }
-      }
-    } else {
-      // remote finish
-      --counts[p];
-    }
-  }
+	/**
+	 * Constructs a finish instance.
+	 */
+	DefaultFinish() {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		spawn(here);
+	}
 
-  @Override
-  public synchronized void tell() {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    if (id == null || id.home.id == here) {
-      // local or root finish
-      if (counts != null) {
-        if (counts[here] == 0) {
-          count++;
-        }
-        if (--counts[here] != 0) {
-          return;
-        }
-      }
-      if (--count == 0) {
-        notifyAll();
-      }
-    } else {
-      // remote finish
-      --counts[here];
-      if (--count == 0) {
-        final int _counts[] = counts;
-        final DefaultFinish that = this;
-        GlobalRuntimeImpl.getRuntime().transport.send(id.home.id,
-            () -> that.update(_counts));
-        Arrays.fill(counts, 0);
-      }
-    }
-  }
+	@Override
+	public synchronized void addSuppressed(Throwable exception) {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		if (id == null || id.home.id == here) {
+			// root finish
+			if (exceptions == null) {
+				exceptions = new ArrayList<>();
+			}
 
-  /**
-   * Applies an update message from a remote finish to the root finish.
-   *
-   * @param _counts
-   *          incoming counters
-   */
-  synchronized void update(int _counts[]) {
-    if (_counts.length > counts.length) {
-      resize(_counts.length);
-    }
-    for (int i = 0; i < _counts.length; i++) {
-      if (counts[i] != 0) {
-        --count;
-      }
-      counts[i] += _counts[i];
-      if (counts[i] != 0) {
-        count++;
-      }
-    }
-    if (count == 0) {
-      notifyAll();
-    }
-  }
+			// FIXME dirty hack to stop issues with serialization of Throwable's
+			// static member used by remote exceptions with no suppressed exceptions
+			// fixSuppressedExceptions(exception);
 
-  @Override
-  public synchronized void addSuppressed(Throwable exception) {
-    final int here = GlobalRuntimeImpl.getRuntime().here;
-    if (id == null || id.home.id == here) {
-      // root finish
-      if (exceptions == null) {
-        exceptions = new ArrayList<>();
-      }
-      exceptions.add(exception);
-    } else {
-      // remote finish: spawn remote task to transfer exception to root finish
-      final SerializableThrowable t = new SerializableThrowable(exception);
-      final DefaultFinish that = this;
-      spawn(id.home.id);
-      new Task(this, (SerializableJob) () -> {
-        that.addSuppressed(t.t);
-      }, here).asyncAt(id.home.id);
-    }
-  }
+			exceptions.add(exception);
+		} else {
 
-  @Override
-  public synchronized boolean isReleasable() {
-    return count == 0;
-  }
+			// remote finish: spawn remote task to transfer exception to root finish
+			final SerializableThrowable t = new SerializableThrowable(exception);
+			final DefaultFinish that = this;
+			spawn(id.home.id);
+			new Task(this, (SerializableJob) () -> {
+				that.addSuppressed(t.t);
+				fixSuppressedExceptions(t.t);
+			}, here).asyncAt(id.home.id);
+		}
+	}
 
-  @Override
-  public synchronized List<Throwable> exceptions() {
-    return exceptions;
-  }
+	@Override
+	public synchronized boolean block() {
+		while (count != 0) {
+			try {
+				wait();
+			} catch (final InterruptedException e) {
+			}
+		}
+		return count == 0;
+	}
 
-  @Override
-  public synchronized boolean block() {
-    while (count != 0) {
-      try {
-        wait();
-      } catch (final InterruptedException e) {
-      }
-    }
-    return count == 0;
-  }
+	@Override
+	public synchronized List<Throwable> exceptions() {
+		return exceptions;
+	}
 
-  /**
-   * Reallocates the {@link #counts} array to account for larger place counts.
-   *
-   * @param min
-   *          a minimal size for the reallocation
-   */
-  private void resize(int min) {
-    final int[] tmp = new int[Math.max(min,
-        GlobalRuntimeImpl.getRuntime().maxPlace())];
-    System.arraycopy(counts, 0, tmp, 0, counts.length);
-    counts = tmp;
-  }
+	@Override
+	public synchronized boolean isReleasable() {
+		return count == 0;
+	}
 
-  /**
-   * Prepares the finish object for serialization.
-   *
-   * @return this
-   */
-  public synchronized Object writeReplace() {
-    if (id == null) {
-      id = new GlobalID();
-      id.putHere(this);
-    }
-    return this;
-  }
+	/**
+	 * Deserializes the finish object.
+	 *
+	 * @return the finish object
+	 */
+	public Object readResolve() {
+		// count = 0;
+		DefaultFinish me = (DefaultFinish) id.putHereIfAbsent(this);
+		if (me == null) {
+			me = this;
+		}
+		synchronized (me) {
+			final int here = GlobalRuntimeImpl.getRuntime().here;
+			if (id.home.id != here && me.counts == null) {
+				me.counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
+			}
+			return me;
+		}
+	}
 
-  /**
-   * Deserializes the finish object.
-   *
-   * @return the finish object
-   */
-  public Object readResolve() {
-    // count = 0;
-    DefaultFinish me = (DefaultFinish) id.putHereIfAbsent(this);
-    if (me == null) {
-      me = this;
-    }
-    synchronized (me) {
-      final int here = GlobalRuntimeImpl.getRuntime().here;
-      if (id.home.id != here && me.counts == null) {
-        me.counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
-      }
-      return me;
-    }
-  }
+	/**
+	 * Reallocates the {@link #counts} array to account for larger place counts.
+	 *
+	 * @param min a minimal size for the reallocation
+	 */
+	private void resize(int min) {
+		final int[] tmp = new int[Math.max(min, GlobalRuntimeImpl.getRuntime().maxPlace())];
+		System.arraycopy(counts, 0, tmp, 0, counts.length);
+		counts = tmp;
+	}
+
+	@Override
+	public synchronized void spawn(int p) {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		if (id == null || id.home.id == here) {
+			// local or root finish
+			if (counts == null) {
+				if (here == p) {
+					count++;
+					return;
+				}
+				counts = new int[GlobalRuntimeImpl.getRuntime().maxPlace()];
+				counts[here] = count;
+				count = 1;
+			}
+			if (p >= counts.length) {
+				resize(p + 1);
+			}
+			if (counts[p]++ == 0) {
+				count++;
+			}
+			if (counts[p] == 0) {
+				--count;
+			}
+		} else {
+			// remote finish
+			if (p >= counts.length) {
+				resize(p + 1);
+			}
+			counts[p]++;
+		}
+	}
+
+	@Override
+	public synchronized void submit(int p) {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		if (id != null && id.home.id != here) {
+			// remote finish
+			count++;
+		}
+	}
+
+	@Override
+	public synchronized void tell() {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		if (id == null || id.home.id == here) {
+			// local or root finish
+			if (counts != null) {
+				if (counts[here] == 0) {
+					count++;
+				}
+				if (--counts[here] != 0) {
+					return;
+				}
+			}
+			if (--count == 0) {
+				notifyAll();
+			}
+		} else {
+			// remote finish
+			--counts[here];
+			if (--count == 0) {
+				final int _counts[] = counts;
+				final DefaultFinish that = this;
+				GlobalRuntimeImpl.getRuntime().transport.send(id.home.id, () -> that.update(_counts));
+				Arrays.fill(counts, 0);
+			}
+		}
+	}
+
+	@Override
+	public synchronized void unspawn(int p) {
+		final int here = GlobalRuntimeImpl.getRuntime().here;
+		if (id == null || id.home.id == here) {
+			// root finish
+			if (counts == null) {
+				// task must have been local
+				--count;
+			} else {
+				if (counts[p] == 0) {
+					count++;
+				}
+				if (--counts[p] == 0) {
+					--count;
+				}
+			}
+		} else {
+			// remote finish
+			--counts[p];
+		}
+	}
+
+	/**
+	 * Applies an update message from a remote finish to the root finish.
+	 *
+	 * @param _counts incoming counters
+	 */
+	synchronized void update(int _counts[]) {
+		if (_counts.length > counts.length) {
+			resize(_counts.length);
+		}
+		for (int i = 0; i < _counts.length; i++) {
+			if (counts[i] != 0) {
+				--count;
+			}
+			counts[i] += _counts[i];
+			if (counts[i] != 0) {
+				count++;
+			}
+		}
+		if (count == 0) {
+			notifyAll();
+		}
+	}
+
+	/**
+	 * Prepares the finish object for serialization.
+	 *
+	 * @return this
+	 */
+	public synchronized Object writeReplace() {
+		if (id == null) {
+			id = new GlobalID();
+			id.putHere(this);
+		}
+		return this;
+	}
 }
