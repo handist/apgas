@@ -94,6 +94,9 @@ final class DefaultFinish implements Serializable, Finish {
 				e1.printStackTrace();
 			}
 		}
+		if (t.getCause() != null) {
+			fixSuppressedExceptions(t.getCause());
+		}
 	}
 
 	/**
