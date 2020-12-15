@@ -40,7 +40,7 @@ public class KryoSerializer implements StreamSerializer<Object> {
     instantiatorStrategy = strategy;     
   }
 
-  private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
+  public static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
     @Override
     protected Kryo initialValue() {
       final Kryo kryo = new Kryo() {
