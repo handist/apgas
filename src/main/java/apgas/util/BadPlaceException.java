@@ -17,6 +17,7 @@ import apgas.Place;
  * A {@link BadPlaceException} is thrown by a {@link GlobalRef} instance when
  * accessed from {@link Place} where it is not defined.
  */
+@SuppressWarnings("unused")
 public class BadPlaceException extends RuntimeException {
   private static final long serialVersionUID = 8639251079580877933L;
 

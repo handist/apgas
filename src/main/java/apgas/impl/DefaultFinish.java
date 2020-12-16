@@ -263,11 +263,12 @@ final class DefaultFinish implements Serializable, Finish {
 		final int here = GlobalRuntimeImpl.getRuntime().here;
 		if (id == null || id.home.id == here) {
 			// local or root finish
-			if (counts != null) {
+			if (counts != null) { // If root finish with remote asyncs
 				if (counts[here] == 0) {
-					count++;
+					count++; // Prevents the finish from progressing in the edge case where the task was sent
+					// from a remote place
 				}
-				if (--counts[here] != 0) {
+				if (--counts[here] != 0) { // Decrement here.
 					return;
 				}
 			}

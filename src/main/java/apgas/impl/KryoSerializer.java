@@ -6,8 +6,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 
-import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.instantiator.ObjectInstantiator;
+import org.objenesis.strategy.InstantiatorStrategy;
 import org.objenesis.strategy.SerializingInstantiatorStrategy;
 
 import com.esotericsoftware.kryo.Kryo;
@@ -31,139 +31,144 @@ import apgas.util.SerializableWithReplace;
  *
  */
 public class KryoSerializer implements StreamSerializer<Object> {
-  private static HashMap<Class, Serializer> additionalRegistrations =  new HashMap<>();
-  public static void registerClass(Class clazz, Serializer serializer) {
-    additionalRegistrations.put(clazz, serializer); 
-  } 
-  private static InstantiatorStrategy instantiatorStrategy = new DefaultForColInstantiatorStrategy();
-  public static void setInstantiatorStrategy(InstantiatorStrategy strategy) {
-    instantiatorStrategy = strategy;     
-  }
+	@SuppressWarnings("rawtypes")
+	private static HashMap<Class, Serializer> additionalRegistrations = new HashMap<>();
 
-  private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
-    @Override
-    protected Kryo initialValue() {
-      final Kryo kryo = new Kryo() {
-        @Override
-        @SuppressWarnings({ "rawtypes", "unchecked" })
-        protected Serializer newDefaultSerializer(Class type) {
-          try {
-            type.getMethod("writeReplace");
-            return new CustomSerializer();
-          } catch (final NoSuchMethodException e) {
-          }
-          return super.newDefaultSerializer(type);
-        }
-      };
-      kryo.addDefaultSerializer(DefaultFinish.class,
-          new DefaultFinishSerializer());
-      kryo.addDefaultSerializer(SerializableWithReplace.class,
-          new CustomSerializer());
-      kryo.setInstantiatorStrategy(instantiatorStrategy);
-      kryo.register(Task.class);
-      kryo.register(UncountedTask.class);
-      kryo.register(Place.class);
-      kryo.register(GlobalID.class);
-      kryo.register(java.lang.invoke.SerializedLambda.class);
-      kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer2());
-      try {
-        kryo.register(Class
-            .forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
-      } catch (final ClassNotFoundException e) {
-      }
-      additionalRegistrations.forEach((Class clazz, Serializer serializer)-> {
-        if(serializer==null) {
-          kryo.register(clazz);
-        } else {
-          kryo.register(clazz, serializer);
-        }
-      });
-      return kryo;
-    }
-  };
+	@SuppressWarnings("rawtypes")
+	public static void registerClass(Class clazz, Serializer serializer) {
+		additionalRegistrations.put(clazz, serializer);
+	}
 
-  @Override
-  public int getTypeId() {
-    return 42;
-  }
+	private static InstantiatorStrategy instantiatorStrategy = new DefaultForColInstantiatorStrategy();
 
-  @Override
-  public void write(ObjectDataOutput objectDataOutput, Object object)
-      throws IOException {
-    final Output output = new UnsafeOutput((OutputStream) objectDataOutput);
-    final Kryo kryo = kryoThreadLocal.get();
-    kryo.writeClassAndObject(output, object);
-    output.flush();
-  }
+	public static void setInstantiatorStrategy(InstantiatorStrategy strategy) {
+		instantiatorStrategy = strategy;
+	}
 
-  @Override
-  public Object read(ObjectDataInput objectDataInput) throws IOException {
-    final Input input = new UnsafeInput((InputStream) objectDataInput);
-    final Kryo kryo = kryoThreadLocal.get();
-    return kryo.readClassAndObject(input);
-  }
+	private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
+		@Override
+		protected Kryo initialValue() {
+			final Kryo kryo = new Kryo() {
+				@Override
+				@SuppressWarnings({ "rawtypes", "unchecked" })
+				protected Serializer newDefaultSerializer(Class type) {
+					try {
+						type.getMethod("writeReplace");
+						return new CustomSerializer();
+					} catch (final NoSuchMethodException e) {
+					}
+					return super.newDefaultSerializer(type);
+				}
+			};
+			kryo.addDefaultSerializer(DefaultFinish.class, new DefaultFinishSerializer());
+			kryo.addDefaultSerializer(SerializableWithReplace.class, new CustomSerializer());
+			kryo.setInstantiatorStrategy(instantiatorStrategy);
+			kryo.register(Task.class);
+			// kryo.register(TaskWithCoFinish.class, new JavaSerializer()); // FIXME do not
+			// use JavaSerializer
+			kryo.register(UncountedTask.class);
+			kryo.register(Place.class);
+			kryo.register(GlobalID.class);
+			kryo.register(java.lang.invoke.SerializedLambda.class);
+			kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer2());
+			try {
+				kryo.register(Class.forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
+			} catch (final ClassNotFoundException e) {
+			}
 
-  @Override
-  public void destroy() {
-  }
+			additionalRegistrations.forEach((@SuppressWarnings("rawtypes") Class clazz,
+					@SuppressWarnings("rawtypes") Serializer serializer) -> {
+				if (serializer == null) {
+					kryo.register(clazz);
+				} else {
+					kryo.register(clazz, serializer);
+				}
+			});
+			return kryo;
+		}
+	};
 
-  private static class CustomSerializer extends Serializer<Object> {
-    @Override
-    public void write(Kryo kryo, Output output, Object object) {
-      try {
-        final Method writeReplace = object.getClass().getMethod("writeReplace");
-        object = writeReplace.invoke(object);
-      } catch (final Exception e) {
-      }
-      kryo.writeClassAndObject(output, object);
-    }
+	@Override
+	public int getTypeId() {
+		return 42;
+	}
 
-    @Override
-    public Object read(Kryo kryo, Input input, Class<Object> type) {
-      Object object = kryo.readClassAndObject(input);
-      try {
-        final Method readResolve = object.getClass()
-            .getDeclaredMethod("readResolve");
-        readResolve.setAccessible(true);
-        object = readResolve.invoke(object);
-      } catch (final Exception e) {
-      }
-      return object;
-    }
-  }
+	@Override
+	public void write(ObjectDataOutput objectDataOutput, Object object) throws IOException {
+		final Output output = new UnsafeOutput((OutputStream) objectDataOutput);
+		final Kryo kryo = kryoThreadLocal.get();
+		kryo.writeClassAndObject(output, object);
+		output.flush();
+	}
 
-  private static class DefaultFinishSerializer
-      extends Serializer<DefaultFinish> {
-    @Override
-    public void write(Kryo kryo, Output output, DefaultFinish object) {
-      object.writeReplace();
-      kryo.writeObject(output, object.id);
-    }
+	@Override
+	public Object read(ObjectDataInput objectDataInput) throws IOException {
+		final Input input = new UnsafeInput((InputStream) objectDataInput);
+		final Kryo kryo = kryoThreadLocal.get();
+		return kryo.readClassAndObject(input);
+	}
 
-    @Override
-    public DefaultFinish read(Kryo kryo, Input input,
-        Class<DefaultFinish> type) {
-      final DefaultFinish f = kryo.newInstance(type);
-      f.id = kryo.readObject(input, GlobalID.class);
-      return (DefaultFinish) f.readResolve();
-    }
-  }
+	@Override
+	public void destroy() {
+	}
 
-  public static class DefaultForColInstantiatorStrategy implements InstantiatorStrategy {
-    private Kryo.DefaultInstantiatorStrategy forCols = new Kryo.DefaultInstantiatorStrategy();
-    private SerializingInstantiatorStrategy ser = new SerializingInstantiatorStrategy();
-    public DefaultForColInstantiatorStrategy() {
-      forCols.setFallbackInstantiatorStrategy(ser);
-    }
-    public <T> ObjectInstantiator<T> newInstantiatorOf(Class<T> type) {
-      if(SerializableWithReplace.class.isAssignableFrom(type)) {
-        return ser.newInstantiatorOf(type);
-      } else if(java.util.Collection.class.isAssignableFrom(type)
-               || java.util.Map.class.isAssignableFrom(type)) {
-        return forCols.newInstantiatorOf(type);
-      } else {
-        return ser.newInstantiatorOf(type);
-      }
-    }
-  }
+	private static class CustomSerializer extends Serializer<Object> {
+		@Override
+		public void write(Kryo kryo, Output output, Object object) {
+			try {
+				final Method writeReplace = object.getClass().getMethod("writeReplace");
+				object = writeReplace.invoke(object);
+			} catch (final Exception e) {
+			}
+			kryo.writeClassAndObject(output, object);
+		}
+
+		@Override
+		public Object read(Kryo kryo, Input input, Class<Object> type) {
+			Object object = kryo.readClassAndObject(input);
+			try {
+				final Method readResolve = object.getClass().getDeclaredMethod("readResolve");
+				readResolve.setAccessible(true);
+				object = readResolve.invoke(object);
+			} catch (final Exception e) {
+			}
+			return object;
+		}
+	}
+
+	private static class DefaultFinishSerializer extends Serializer<DefaultFinish> {
+		@Override
+		public void write(Kryo kryo, Output output, DefaultFinish object) {
+			object.writeReplace();
+			kryo.writeObject(output, object.id);
+		}
+
+		@Override
+		public DefaultFinish read(Kryo kryo, Input input, Class<DefaultFinish> type) {
+			final DefaultFinish f = kryo.newInstance(type);
+			f.id = kryo.readObject(input, GlobalID.class);
+			return (DefaultFinish) f.readResolve();
+		}
+	}
+
+	public static class DefaultForColInstantiatorStrategy implements InstantiatorStrategy {
+		private Kryo.DefaultInstantiatorStrategy forCols = new Kryo.DefaultInstantiatorStrategy();
+		private SerializingInstantiatorStrategy ser = new SerializingInstantiatorStrategy();
+
+		public DefaultForColInstantiatorStrategy() {
+			forCols.setFallbackInstantiatorStrategy(ser);
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> ObjectInstantiator<T> newInstantiatorOf(Class<T> type) {
+			if (SerializableWithReplace.class.isAssignableFrom(type)) {
+				return ser.newInstantiatorOf(type);
+			} else if (java.util.Collection.class.isAssignableFrom(type)
+					|| java.util.Map.class.isAssignableFrom(type)) {
+				return forCols.newInstantiatorOf(type);
+			} else {
+				return ser.newInstantiatorOf(type);
+			}
+		}
+	}
 }
