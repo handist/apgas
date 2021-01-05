@@ -31,6 +31,7 @@ import apgas.util.SerializableWithReplace;
  *
  */
 public class KryoSerializer implements StreamSerializer<Object> {
+
 	@SuppressWarnings("rawtypes")
 	private static HashMap<Class, Serializer> additionalRegistrations = new HashMap<>();
 
@@ -45,7 +46,7 @@ public class KryoSerializer implements StreamSerializer<Object> {
 		instantiatorStrategy = strategy;
 	}
 
-	private static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
+	public static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 		@Override
 		protected Kryo initialValue() {
 			final Kryo kryo = new Kryo() {
@@ -64,8 +65,6 @@ public class KryoSerializer implements StreamSerializer<Object> {
 			kryo.addDefaultSerializer(SerializableWithReplace.class, new CustomSerializer());
 			kryo.setInstantiatorStrategy(instantiatorStrategy);
 			kryo.register(Task.class);
-			// kryo.register(TaskWithCoFinish.class, new JavaSerializer()); // FIXME do not
-			// use JavaSerializer
 			kryo.register(UncountedTask.class);
 			kryo.register(Place.class);
 			kryo.register(GlobalID.class);
@@ -75,7 +74,6 @@ public class KryoSerializer implements StreamSerializer<Object> {
 				kryo.register(Class.forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
 			} catch (final ClassNotFoundException e) {
 			}
-
 			additionalRegistrations.forEach((@SuppressWarnings("rawtypes") Class clazz,
 					@SuppressWarnings("rawtypes") Serializer serializer) -> {
 				if (serializer == null) {
@@ -171,4 +169,5 @@ public class KryoSerializer implements StreamSerializer<Object> {
 			}
 		}
 	}
+
 }
