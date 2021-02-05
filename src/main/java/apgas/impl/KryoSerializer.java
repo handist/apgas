@@ -49,42 +49,46 @@ public class KryoSerializer implements StreamSerializer<Object> {
 	public static final ThreadLocal<Kryo> kryoThreadLocal = new ThreadLocal<Kryo>() {
 		@Override
 		protected Kryo initialValue() {
-			final Kryo kryo = new Kryo() {
-				@Override
-				@SuppressWarnings({ "rawtypes", "unchecked" })
-				protected Serializer newDefaultSerializer(Class type) {
-					try {
-						type.getMethod("writeReplace");
-						return new CustomSerializer();
-					} catch (final NoSuchMethodException e) {
-					}
-					return super.newDefaultSerializer(type);
-				}
-			};
-			kryo.addDefaultSerializer(DefaultFinish.class, new DefaultFinishSerializer());
-			kryo.addDefaultSerializer(SerializableWithReplace.class, new CustomSerializer());
-			kryo.setInstantiatorStrategy(instantiatorStrategy);
-			kryo.register(Task.class);
-			kryo.register(UncountedTask.class);
-			kryo.register(Place.class);
-			kryo.register(GlobalID.class);
-			kryo.register(java.lang.invoke.SerializedLambda.class);
-			kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer2());
-			try {
-				kryo.register(Class.forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
-			} catch (final ClassNotFoundException e) {
-			}
-			additionalRegistrations.forEach((@SuppressWarnings("rawtypes") Class clazz,
-					@SuppressWarnings("rawtypes") Serializer serializer) -> {
-				if (serializer == null) {
-					kryo.register(clazz);
-				} else {
-					kryo.register(clazz, serializer);
-				}
-			});
-			return kryo;
+			return getKryoInstance();
 		}
 	};
+
+	public static final Kryo getKryoInstance() {
+		final Kryo kryo = new Kryo() {
+			@Override
+			@SuppressWarnings({ "rawtypes", "unchecked" })
+			protected Serializer newDefaultSerializer(Class type) {
+				try {
+					type.getMethod("writeReplace");
+					return new CustomSerializer();
+				} catch (final NoSuchMethodException e) {
+				}
+				return super.newDefaultSerializer(type);
+			}
+		};
+		kryo.addDefaultSerializer(DefaultFinish.class, new DefaultFinishSerializer());
+		kryo.addDefaultSerializer(SerializableWithReplace.class, new CustomSerializer());
+		kryo.setInstantiatorStrategy(instantiatorStrategy);
+		kryo.register(Task.class);
+		kryo.register(UncountedTask.class);
+		kryo.register(Place.class);
+		kryo.register(GlobalID.class);
+		kryo.register(java.lang.invoke.SerializedLambda.class);
+		kryo.register(ClosureSerializer.Closure.class, new ClosureSerializer2());
+		try {
+			kryo.register(Class.forName(PlaceLocalObject.class.getName() + "$ObjectReference"));
+		} catch (final ClassNotFoundException e) {
+		}
+		additionalRegistrations.forEach(
+				(@SuppressWarnings("rawtypes") Class clazz, @SuppressWarnings("rawtypes") Serializer serializer) -> {
+					if (serializer == null) {
+						kryo.register(clazz);
+					} else {
+						kryo.register(clazz, serializer);
+					}
+				});
+		return kryo;
+	}
 
 	@Override
 	public int getTypeId() {
