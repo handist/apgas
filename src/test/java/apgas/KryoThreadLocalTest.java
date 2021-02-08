@@ -20,8 +20,14 @@ import apgas.impl.KryoSerializer;
 
 public class KryoThreadLocalTest implements Serializable {
 
+	/** Serial Version UID */
+	private static final long serialVersionUID = 1131111453796155741L;
+
 	private class Obj implements Serializable {
+		/** Serial Version UID */
+		private static final long serialVersionUID = 8162386968529560900L;
 		public int n;
+		@SuppressWarnings("unused")
 		public String s;
 		public ArrayList<String> list;
 
@@ -82,6 +88,7 @@ public class KryoThreadLocalTest implements Serializable {
 						k.setAutoReset(false);
 
 						Obj o0 = (Obj) k.readClassAndObject(in);
+						@SuppressWarnings("unused")
 						Obj o1 = (Obj) k.readClassAndObject(in);
 						Obj o2 = (Obj) k.readClassAndObject(in);
 

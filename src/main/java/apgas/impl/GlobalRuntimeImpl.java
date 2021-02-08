@@ -39,6 +39,7 @@ import com.hazelcast.core.IMap;
 
 import apgas.Configuration;
 import apgas.Constructs;
+import apgas.ExtendedConstructs;
 import apgas.GlobalRuntime;
 import apgas.Job;
 import apgas.MultipleException;
@@ -663,6 +664,23 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 			coF.spawn(p.id);
 		}
 		new Task(finish, j, here, coFinish).asyncAt(p.id);
+	}
+
+	/**
+	 * Implementation of
+	 * {@link ExtendedConstructs#asyncArbitraryFinish(Place, SerializableJob, Finish...)}
+	 * 
+	 * @param p      place on which the job should execute
+	 * @param j      job to execute
+	 * @param finish the finish instances under which the job will be registered
+	 */
+	public void asyncArbitraryFinish(Place p, SerializableJob j, Finish[] finish) {
+		for (Finish f : finish) {
+			f.spawn(p.id);
+		}
+		Finish f = finish[finish.length - 1];
+		finish = Arrays.copyOf(finish, finish.length - 1);
+		new Task(f, j, here, finish).asyncAt(p.id);
 	}
 
 	/**
