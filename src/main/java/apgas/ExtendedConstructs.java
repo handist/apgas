@@ -38,4 +38,19 @@ public final class ExtendedConstructs {
 	public static void asyncDifferentFinish(Finish f, Job j) {
 		GlobalRuntime.getRuntimeImpl().asyncDifferentFinish(f, j);
 	}
+
+	/**
+	 * Variation of {@link #asyncAtWithCoFinish(Place, SerializableJob, Finish...)}
+	 * in which the current {@link Finish} instance of the calling thread is
+	 * ignored. Only the Finish instances given as paramaters will ne notified of
+	 * the job submitted as parameter
+	 * 
+	 * @param p      the place on which the job should executed
+	 * @param j      the job to execute
+	 * @param finish all the finish instances which will ne notified of the
+	 *               submitted job
+	 */
+	public static void asyncArbitraryFinish(Place p, SerializableJob j, Finish... finish) {
+		GlobalRuntime.getRuntimeImpl().asyncArbitraryFinish(p, j, finish);
+	}
 }

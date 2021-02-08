@@ -25,84 +25,82 @@ import apgas.impl.GlobalRuntimeImpl;
  * initialization.
  */
 public abstract class GlobalRuntime {
-  /**
-   * The command line arguments if the main method of this class is invoked.
-   */
-  private static String[] args;
+	/**
+	 * The command line arguments if the main method of this class is invoked.
+	 */
+	private static String[] args;
 
-  /**
-   * A wrapper class for implementing the singleton pattern.
-   */
-  private static class GlobalRuntimeWrapper {
-    /**
-     * The {@link GlobalRuntime} instance for this place.
-     */
-    private static final GlobalRuntimeImpl runtime = new GlobalRuntimeImpl(
-        args);
-  }
+	/**
+	 * A wrapper class for implementing the singleton pattern.
+	 */
+	private static class GlobalRuntimeWrapper {
+		/**
+		 * The {@link GlobalRuntime} instance for this place.
+		 */
+		private static final GlobalRuntimeImpl runtime = new GlobalRuntimeImpl(args);
+	}
 
-  /**
-   * Constructs a new {@link GlobalRuntime} instance.
-   */
-  protected GlobalRuntime() {
-  }
+	/**
+	 * Constructs a new {@link GlobalRuntime} instance.
+	 */
+	protected GlobalRuntime() {
+	}
 
-  /**
-   * Returns the {@link GlobalRuntime} instance for this place.
-   *
-   * @return the GlobalRuntime instance
-   */
-  public static GlobalRuntime getRuntime() {
-    return getRuntimeImpl();
-  }
+	/**
+	 * Returns the {@link GlobalRuntime} instance for this place.
+	 *
+	 * @return the GlobalRuntime instance
+	 */
+	public static GlobalRuntime getRuntime() {
+		return getRuntimeImpl();
+	}
 
-  /**
-   * Returns the {@link GlobalRuntimeImpl} instance for this place.
-   *
-   * @return the GlobalRuntimeImpl instance
-   */
-  static GlobalRuntimeImpl getRuntimeImpl() {
-    return GlobalRuntimeWrapper.runtime;
-  }
+	/**
+	 * Returns the {@link GlobalRuntimeImpl} instance for this place.
+	 *
+	 * @return the GlobalRuntimeImpl instance
+	 */
+	static GlobalRuntimeImpl getRuntimeImpl() {
+		return GlobalRuntimeWrapper.runtime;
+	}
 
-  /**
-   * Shuts down the {@link GlobalRuntime} instance.
-   */
-  public abstract void shutdown();
+	/**
+	 * Shuts down the {@link GlobalRuntime} instance.
+	 */
+	public abstract void shutdown();
 
-  /**
-   * Registers a place failure handler.
-   * <p>
-   * The handler is invoked for each failed place.
-   *
-   * @param handler
-   *          the handler to register or null to unregister the current handler
-   */
-  public abstract void setPlaceFailureHandler(Consumer<Place> handler);
+	/**
+	 * Registers a place failure handler.
+	 * <p>
+	 * The handler is invoked for each failed place.
+	 *
+	 * @param handler the handler to register or null to unregister the current
+	 *                handler
+	 */
+	public abstract void setPlaceFailureHandler(Consumer<Place> handler);
 
-  /**
-   * Returns the executor service for the place.
-   *
-   * @return the executor service
-   */
-  public abstract ExecutorService getExecutorService();
+	/**
+	 * Returns the executor service for the place.
+	 *
+	 * @return the executor service
+	 */
+	public abstract ExecutorService getExecutorService();
 
-  /**
-   * Initializes the global runtime.
-   *
-   * @param args
-   *          the command line arguments
-   */
-  public static void main(String[] args) {
-    GlobalRuntime.args = args;
-    getRuntime();
-  }
+	/**
+	 * Initializes the global runtime.
+	 *
+	 * @param args the command line arguments
+	 */
+	public static void main(String[] args) {
+		GlobalRuntime.args = args;
+		getRuntime();
+	}
 
-  /**
-   * Returns the time of the last place failure as reported by
-   * {@link System#nanoTime} if any or null otherwise.
-   *
-   * @return the time of the last place failure or null
-   */
-  public abstract Long lastfailureTime();
+	/**
+	 * Returns the time of the last place failure as reported by
+	 * {@link System#nanoTime} if any or null otherwise.
+	 *
+	 * @return the time of the last place failure or null
+	 */
+	public abstract Long lastfailureTime();
 }
