@@ -7,6 +7,7 @@ import static apgas.Constructs.finish;
 import static apgas.Constructs.here;
 import static apgas.Constructs.place;
 import static apgas.Constructs.places;
+import static apgas.ExtendedConstructs.asyncArbitraryFinish;
 import static apgas.ExtendedConstructs.asyncAtWithCoFinish;
 import static apgas.ExtendedConstructs.asyncDifferentFinish;
 import static apgas.ExtendedConstructs.currentFinish;
@@ -36,9 +37,6 @@ import apgas.util.PlaceLocalObject;
  *
  */
 public class ExtendedConstructsTest implements Serializable {
-
-	/** Serial Version UID */
-	private static final long serialVersionUID = -3497063493183516285L;
 
 	/** Managed blocker used to synchronize the threads */
 	private static class Lock extends PlaceLocalObject implements ManagedBlocker {
@@ -73,6 +71,9 @@ public class ExtendedConstructsTest implements Serializable {
 
 	}
 
+	/** Serial Version UID */
+	private static final long serialVersionUID = -3497063493183516285L;
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		System.setProperty(Configuration.APGAS_PLACES, "2");
@@ -85,35 +86,27 @@ public class ExtendedConstructsTest implements Serializable {
 		GlobalRuntime.getRuntime().shutdown();
 	}
 
-	/** Used to keep the local handle of a finish */
-	transient volatile Finish localFinishHandle;
 	/** Counter used to check that asynchronous tasks have completed */
 	AtomicInteger counter;
+	/** Used to keep the local handle of a finish */
+	transient volatile Finish localFinishHandle;
 
 	/**
-	 * Tests the async with co-finish when no co-finish are used. Behavior should be
-	 * identical to using a normal async
+	 * Test that checks that the arbitrary finish construct works as intended in a
+	 * situation where making an asyncAt would be equivalent
 	 * 
 	 * @throws Throwable if thrown during the test
 	 */
 	@Test(timeout = 5000)
-	public void testWithNoCoFinish() throws Throwable {
-		final PlaceLocalArray<Place> pla = PlaceLocalArray.make(places(), 1);
-		try {
-			finish(() -> {
-				for (final Place p : places()) {
-					asyncAtWithCoFinish(p, () -> {
-						pla.set(0, here());
-					});
-				}
+	public void testArbitraryFinish() throws Throwable {
+		finish(() -> {
+			asyncAt(place(1), () -> {
+				Finish f = currentFinish();
+				asyncArbitraryFinish(place(0), () -> {
+					System.out.println("Message from asyncArbitraryFinish construct");
+				}, f);
 			});
-		} catch (MultipleException me) {
-			me.printStackTrace();
-			throw me.getSuppressed()[0];
-		}
-		for (final Place p : places()) {
-			assertEquals(at(p, () -> pla.get(0)), p);
-		}
+		});
 	}
 
 	/**
@@ -178,11 +171,29 @@ public class ExtendedConstructsTest implements Serializable {
 		}
 	}
 
-	private void z_initFinishMemberAndBlock(ManagedBlocker blocker) {
-		localFinishHandle = currentFinish();
+	/**
+	 * Tests the async with co-finish when no co-finish are used. Behavior should be
+	 * identical to using a normal async
+	 * 
+	 * @throws Throwable if thrown during the test
+	 */
+	@Test(timeout = 5000)
+	public void testWithNoCoFinish() throws Throwable {
+		final PlaceLocalArray<Place> pla = PlaceLocalArray.make(places(), 1);
 		try {
-			ForkJoinPool.managedBlock(blocker);
-		} catch (InterruptedException e) {
+			finish(() -> {
+				for (final Place p : places()) {
+					asyncAtWithCoFinish(p, () -> {
+						pla.set(0, here());
+					});
+				}
+			});
+		} catch (MultipleException me) {
+			me.printStackTrace();
+			throw me.getSuppressed()[0];
+		}
+		for (final Place p : places()) {
+			assertEquals(at(p, () -> pla.get(0)), p);
 		}
 	}
 
@@ -190,5 +201,13 @@ public class ExtendedConstructsTest implements Serializable {
 		asyncAt(place(0), () -> {
 			counter.incrementAndGet();
 		});
+	}
+
+	private void z_initFinishMemberAndBlock(ManagedBlocker blocker) {
+		localFinishHandle = currentFinish();
+		try {
+			ForkJoinPool.managedBlock(blocker);
+		} catch (InterruptedException e) {
+		}
 	}
 }
