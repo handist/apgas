@@ -137,7 +137,13 @@ final public class MPILauncher implements Launcher {
 		}
 
 		if (verboseLauncher) {
-			System.err.println("[MPILaucnher] command: " + java.util.Arrays.asList(args));
+			System.err.print("[MPILauncher] Args:");
+			for (String s : args) {
+				System.err.print(" " + s);
+			}
+			System.err.println();
+			System.err.println("[MPILauncher] Running with MPJ ? " + isMPJ);
+			System.err.println("[MPILauncher] command: " + java.util.Arrays.asList(args));
 			System.err.println("[MPILauncher] rank = " + commRank);
 		}
 
@@ -162,9 +168,6 @@ final public class MPILauncher implements Launcher {
 		// method is launched
 		System.setProperty(Config.APGAS_LAUNCHER, MPILauncher.class.getCanonicalName());
 
-		// Sets the APGAS_VERBOSE_SERIALIZATION to "true"
-		// System.setProperty(Configuration.APGAS_VERBOSE_SERIALIZATION, "true");
-
 		// If "kryo==true", the program uses KryoSerializer instead of JavaSerializer.
 		boolean kryo = true;
 
@@ -184,17 +187,19 @@ final public class MPILauncher implements Launcher {
 		 * runtime and waits till asynchronous tasks are submitted to this place.
 		 */
 		if (commRank == 0) {
+
+			String mainClassName = args[isMPJ ? 3 : 0];
 			try {
 				GlobalRuntime.getRuntime();
-				final Method mainMethod = Class.forName(args[isMPJ ? 3 : 0]).getMethod("main", String[].class);
+				final Method mainMethod = Class.forName(mainClassName).getMethod("main", String[].class);
 				final Object[] mainArgs = new Object[1];
 				mainArgs[0] = newArgs;
 				mpiCustomSetup(commRank, MPI.COMM_WORLD);
 				mainMethod.invoke(null, mainArgs);
 			} catch (final ClassNotFoundException e) {
-				System.err.println("[MPILauncher] Error: Class " + args[0] + " could not be found");
+				System.err.println("[MPILauncher] Error: Class " + mainClassName + " could not be found");
 			} catch (final NoSuchMethodException e) {
-				System.err.println("[MPILauncher] Error: Class " + args[0] + " does not have a main method");
+				System.err.println("[MPILauncher] Error: Class " + mainClassName + " does not have a main method");
 			} catch (final Exception e) {
 				e.printStackTrace();
 			}
