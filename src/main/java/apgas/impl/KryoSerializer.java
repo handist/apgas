@@ -67,6 +67,7 @@ public class KryoSerializer implements StreamSerializer<Object> {
 			}
 		};
 		kryo.addDefaultSerializer(DefaultFinish.class, new DefaultFinishSerializer());
+		kryo.addDefaultSerializer(DebugFinish.class, new DebugFinishSerializer());
 		kryo.addDefaultSerializer(SerializableWithReplace.class, new CustomSerializer());
 		kryo.setInstantiatorStrategy(instantiatorStrategy);
 		kryo.register(Task.class);
@@ -150,6 +151,22 @@ public class KryoSerializer implements StreamSerializer<Object> {
 			final DefaultFinish f = kryo.newInstance(type);
 			f.id = kryo.readObject(input, GlobalID.class);
 			return (DefaultFinish) f.readResolve();
+		}
+	}
+
+	private static class DebugFinishSerializer extends Serializer<DebugFinish> {
+
+		@Override
+		public void write(Kryo kryo, Output output, DebugFinish object) {
+			object.writeReplace();
+			kryo.writeObject(output, object.id);
+		}
+
+		@Override
+		public DebugFinish read(Kryo kryo, Input input, Class<DebugFinish> type) {
+			final DebugFinish f = kryo.newInstance(type);
+			f.id = kryo.readObject(input, GlobalID.class);
+			return (DebugFinish) f.readResolve();
 		}
 	}
 
