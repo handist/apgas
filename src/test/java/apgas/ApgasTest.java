@@ -24,10 +24,15 @@ import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
+import apgas.impl.Config;
+import apgas.impl.DebugFinish;
 import apgas.util.GlobalRef;
 import apgas.util.PlaceLocalArray;
 
@@ -38,7 +43,20 @@ public class ApgasTest {
 	public static void setUpBeforeClass() throws Exception {
 		System.setProperty(Configuration.APGAS_PLACES, "4");
 		// System.setProperty("apgas.serialization", "java");
+		System.setProperty(Config.APGAS_FINISH, DebugFinish.class.getCanonicalName());
 		GlobalRuntime.getRuntime();
+	}
+
+	@Rule
+	public TestName nameOfCurrentTest = new TestName();
+
+	@After
+	public void afterEachTest() {
+		if (DebugFinish.class.getCanonicalName().equals(System.getProperty(Config.APGAS_FINISH))) {
+			System.out.println("Dumping the errors that occurred during " + nameOfCurrentTest.getMethodName());
+			// If we are using the DebugFinish, dump all throwables collected on each host
+			DebugFinish.dumpAllSuppressedExceptions();
+		}
 	}
 
 	@AfterClass
