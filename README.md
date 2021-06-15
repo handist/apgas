@@ -15,6 +15,10 @@ This project is licensed under the terms of the Eclipse Public License v1.0.
   This launcher allows us to launch the Apgas runtime with an `mpirun -np 4 java -cp ...` command rather than using the default Ssh launcher. This launcher is absolutely needed to launch Java + APGAS programs on supercomputers as we cannot use Ssh to connect to compute nodes. 
 
   The files concerned are in the `apgas.mpi` package.
+  
+* **Creation of a Finish implementation dedicated to debugging**
+
+  This `Finish` implementation is class `apgas.impl.DebugFinish`. Its behavior is mostly identical to the `DefaultFinish` implementation. It presents the added feature of recording locally any exception collected from asynchronous tasks before transmitting them to the "root" finish. This can be used in JUnit test routines in cases where a finish does not terminate within a given timeout: as part of a JUnit `@After` method, it is possible to dump all collected exceptions from all hosts. With the default Finish implementation, any collected exception would remain unaccessible until termination. With the `DebugFinish`, it is possible to dump all collected exceptions even if the `finish` does not terminate.
 
 * **Correction of a serialization bug**
 
