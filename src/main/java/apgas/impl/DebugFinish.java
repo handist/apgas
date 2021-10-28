@@ -88,6 +88,22 @@ public final class DebugFinish implements Serializable, Finish {
 		}
 	}
 
+	/**
+	 * Method which indicates if any of the Places have some suppressed exceptions
+	 * which have not be dumped yet with {@link #dumpAllSuppressedExceptions()}.
+	 * 
+	 * @return true if there are some exceptions kept in record which have not been
+	 *         dumped yet
+	 */
+	public static boolean suppressedExceptionsPresent() {
+		for (Place p : Constructs.places()) {
+			if (!Constructs.at(p, () -> localThrowables.isEmpty())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static void dumpAllLocalSuppressedExceptions() {
 		System.err.println("Suppressed Exceptions on place(" + GlobalRuntimeImpl.getRuntime().here + "):");
 		for (DebugFinish key : localThrowables.keySet()) {
@@ -98,6 +114,7 @@ public final class DebugFinish implements Serializable, Finish {
 				t.printStackTrace(System.err);
 			}
 		}
+		System.err.flush();
 	}
 
 	/**

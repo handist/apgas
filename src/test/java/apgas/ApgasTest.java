@@ -53,9 +53,12 @@ public class ApgasTest {
 	@After
 	public void afterEachTest() {
 		if (DebugFinish.class.getCanonicalName().equals(System.getProperty(Config.APGAS_FINISH))) {
-			System.out.println("Dumping the errors that occurred during " + nameOfCurrentTest.getMethodName());
-			// If we are using the DebugFinish, dump all throwables collected on each host
-			DebugFinish.dumpAllSuppressedExceptions();
+			if (DebugFinish.suppressedExceptionsPresent()) {
+				System.err.println("Dumping the errors that occurred during " + nameOfCurrentTest.getMethodName());
+				System.err.flush();
+				// If we are using the DebugFinish, dump all throwables collected on each host
+				DebugFinish.dumpAllSuppressedExceptions();
+			}
 		}
 	}
 
