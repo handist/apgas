@@ -356,7 +356,9 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 					final ArrayList<String> command = new ArrayList<>();
 					command.add(java);
 					command.add("-Duser.dir=" + System.getProperty("user.dir"));
-					command.add("-Xbootclasspath:" + ManagementFactory.getRuntimeMXBean().getBootClassPath());
+					// Removed this option to allow execution with Java 11
+					// command.add("-Xbootclasspath:" +
+					// ManagementFactory.getRuntimeMXBean().getBootClassPath());
 					command.add("-cp");
 					command.add(System.getProperty("java.class.path"));
 					for (final String property : System.getProperties().stringPropertyNames()) {
