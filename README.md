@@ -1,6 +1,7 @@
 # APGAS for Java
 
-This project is a fork from the APGAS for Java library first developed by the X10 team of IBM. The original library can be found here: [github.com/x10-lang/apgas](https://github.com/x10-lang/apgas). 
+This project is a fork from the APGAS for Java library first developed by the X10 team of IBM.
+The original library can be found here: [github.com/x10-lang/apgas](https://github.com/x10-lang/apgas). 
 
 Some modifications were made to resolve some bugs and integrate new features. 
 
@@ -30,4 +31,11 @@ This project is licensed under the terms of the Eclipse Public License v1.0.
 
 * **Tweaks to serialization**
 
-  Ongoing project
+  Ongoing
+  
+## Dependencies
+
+This project depends on [OpenMPI](https://www.open-mpi.org/).
+To compile this project and run programs with the MPI launcher, you will need to install a version of the OpenMPI library _with its Java bindings_ on your system. 
+This project expects that the `mpi.jar` file produced as part of the OpenMPI compilation is found in `${OPENMPI_LIB}/mpi.jar`. 
+You will define the environment variable `OPENMPI_LIB` accordingly.

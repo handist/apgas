@@ -121,8 +121,9 @@ final public class MPILauncher implements Launcher {
 	public static void main(String[] args) throws Exception {
 
 		MPI.Init(args);
-		commRank = MPI.COMM_WORLD.Rank();
-		commSize = MPI.COMM_WORLD.Size();
+		commRank = MPI.COMM_WORLD.getRank();
+		commSize = MPI.COMM_WORLD.getSize();
+		MPI.COMM_WORLD.setErrhandler(MPI.ERRORS_RETURN);
 
 		verboseLauncher = Boolean.parseBoolean(System.getProperty(Configuration.APGAS_VERBOSE_LAUNCHER, "false"));
 
@@ -271,12 +272,12 @@ final public class MPILauncher implements Launcher {
 	static void slave() throws Exception {
 
 		final int[] msglen = new int[1];
-		MPI.COMM_WORLD.Bcast(msglen, 0, 1, MPI.INT, 0);
+		MPI.COMM_WORLD.bcast(msglen, 1, MPI.INT, 0);
 		final byte[] msgbuf = new byte[msglen[0]];
-		MPI.COMM_WORLD.Bcast(msgbuf, 0, msglen[0], MPI.BYTE, 0);
+		MPI.COMM_WORLD.bcast(msgbuf, msglen[0], MPI.BYTE, 0);
 		final String[] command = (String[]) deserializeFromByteArray(msgbuf);
 		if (verboseLauncher) {
-			System.err.println("command@worker[" + MPI.COMM_WORLD.Rank() + "]: " + java.util.Arrays.asList(command));
+			System.err.println("command@worker[" + MPI.COMM_WORLD.getRank() + "]: " + java.util.Arrays.asList(command));
 		}
 		for (int i = 1; i < command.length; i++) {
 			final String term = command[i];
@@ -352,8 +353,8 @@ final public class MPILauncher implements Launcher {
 		final byte[] baCommand = serializeToByteArray(command.toArray(new String[command.size()]));
 		final int[] msglen = new int[1];
 		msglen[0] = baCommand.length;
-		MPI.COMM_WORLD.Bcast(msglen, 0, 1, MPI.INT, 0);
-		MPI.COMM_WORLD.Bcast(baCommand, 0, msglen[0], MPI.BYTE, 0);
+		MPI.COMM_WORLD.bcast(msglen, 1, MPI.INT, 0);
+		MPI.COMM_WORLD.bcast(baCommand, msglen[0], MPI.BYTE, 0);
 	}
 
 	/**
@@ -374,7 +375,7 @@ final public class MPILauncher implements Launcher {
 	public Process launch(List<String> command, String host, boolean verbose) throws Exception {
 
 		System.err.println("[MPILauncher] Internal Error");
-		mpiCustomFinalize(MPI.COMM_WORLD.Rank(), MPI.COMM_WORLD);
+		mpiCustomFinalize(MPI.COMM_WORLD.getRank(), MPI.COMM_WORLD);
 		System.exit(-1);
 
 		return null;

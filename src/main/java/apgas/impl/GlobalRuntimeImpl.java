@@ -265,14 +265,22 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 			if (host == null) {
 				host = localhost;
 			}
-			try {
+
+			// Choosing the network interface
+			String designatedInterface = System.getProperty(Config.APGAS_INTERFACE); // will be null is not specified
+			if (designatedInterface != null) {
+				// If the network interface was specified, try to find and use it.
 				final Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 				while (networkInterfaces.hasMoreElements()) {
 					final NetworkInterface ni = networkInterfaces.nextElement();
-					if (!InetAddress.getByName(host).isReachable(ni, 0, 100)) {
+					System.err.println("Considering interface " + ni.getDisplayName());
+					if (!ni.getDisplayName().equals(designatedInterface)) {
+						System.err.println("Skipping " + ni.getDisplayName() + " interface");
 						continue;
 					}
+
 					final Enumeration<InetAddress> e = ni.getInetAddresses();
+
 					while (e.hasMoreElements()) {
 						final InetAddress inetAddress = e.nextElement();
 						if (inetAddress.isLoopbackAddress() || inetAddress instanceof Inet6Address) {
@@ -281,7 +289,34 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 						ip = inetAddress.getHostAddress();
 					}
 				}
-			} catch (final IOException e) {
+				if (ip == null) {
+					// Could not find the specified interface, print a warning
+					System.err.println("[APGAS] Could not find specified interface " + designatedInterface
+							+ ", resorting to default selection method");
+				}
+			}
+
+			if (ip == null) {
+				// There was no network interface specified (or the specified interface could
+				// not be found). We check available interfaces to try and find a suitable one.
+				try {
+					final Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+					while (networkInterfaces.hasMoreElements()) {
+						final NetworkInterface ni = networkInterfaces.nextElement();
+						if (!InetAddress.getByName(host).isReachable(ni, 0, 100)) {
+							continue;
+						}
+						final Enumeration<InetAddress> e = ni.getInetAddresses();
+						while (e.hasMoreElements()) {
+							final InetAddress inetAddress = e.nextElement();
+							if (inetAddress.isLoopbackAddress() || inetAddress instanceof Inet6Address) {
+								continue;
+							}
+							ip = inetAddress.getHostAddress();
+						}
+					}
+				} catch (final IOException e) {
+				}
 			}
 
 			// check first entry of hostfile

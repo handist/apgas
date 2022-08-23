@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.github.handist</groupId>
 	<artifactId>apgas</artifactId>
-	<version>v1.2.2</version>
+	<version>v2.0.0</version>
 	<name>Apgas for Java</name>
 	<description>Fork from github.com/x10-lang/apgas</description>
 
@@ -33,10 +33,11 @@
 			<version>4.0.2</version>
 		</dependency>
 		<dependency>
-			<groupId>com.github.handist</groupId>
-			<artifactId>mpijava</artifactId>
-			<version>v1.2.7</version>
-			<scope>provided</scope>
+			<groupId>openmpi</groupId>
+			<artifactId>java-bindings</artifactId>
+			<version>any</version>
+			<scope>system</scope>
+			<systemPath>${env.OPENMPI_LIB}/mpi.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>junit</groupId>

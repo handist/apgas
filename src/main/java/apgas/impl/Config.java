@@ -16,72 +16,80 @@ package apgas.impl;
  * configure the global runtime.
  */
 public final class Config {
-  /**
-   * Prevents instantiation.
-   */
-  private Config() {
-  }
+	/**
+	 * Prevents instantiation.
+	 */
+	private Config() {
+	}
 
-  /**
-   * Name of the network transport class implementation to instantiate (String
-   * property).
-   * <p>
-   * Currently "{@code apgas.impl.Transport}" and "
-   * {@code apgas.sockets.SocketTransport}" are supported. Defaults to "
-   * {@code apgas.impl.Transport}".
-   *
-   */
-  public static final String APGAS_TRANSPORT = "apgas.transport";
+	/**
+	 * Name of the network transport class implementation to instantiate (String
+	 * property).
+	 * <p>
+	 * Currently "{@code apgas.impl.Transport}" and "
+	 * {@code apgas.sockets.SocketTransport}" are supported. Defaults to "
+	 * {@code apgas.impl.Transport}".
+	 *
+	 */
+	public static final String APGAS_TRANSPORT = "apgas.transport";
 
-  /**
-   * Enables or disables compression on the network links when using transport "
-   * {@code apgas.sockets.SocketTransport}".
-   * <p>
-   * Set to "none" or "snappy", which is the default.
-   */
-  public static final String APGAS_TRANSPORT_COMPRESSION = "apgas.transport.compression";
+	/**
+	 * Enables or disables compression on the network links when using transport "
+	 * {@code apgas.sockets.SocketTransport}".
+	 * <p>
+	 * Set to "none" or "snappy", which is the default.
+	 */
+	public static final String APGAS_TRANSPORT_COMPRESSION = "apgas.transport.compression";
 
-  /**
-   * Upper bound on the number of persistent threads in the thread pool (Integer
-   * property).
-   * <p>
-   * Defaults to 256.
-   */
-  public static final String APGAS_MAX_THREADS = "apgas.max.threads";
+	/**
+	 * Upper bound on the number of persistent threads in the thread pool (Integer
+	 * property).
+	 * <p>
+	 * Defaults to 256.
+	 */
+	public static final String APGAS_MAX_THREADS = "apgas.max.threads";
 
-  /**
-   * Reduces the number of threads used by Hazelcast if set (Boolean property).
-   */
-  public static final String APGAS_COMPACT = "apgas.compact";
+	/**
+	 * Setting used to specify which interface should be used to setup the
+	 * inter-process network communication. Specifying this setting will bypass the
+	 * automated iterative check of connectivity between nodes and instead choose
+	 * the designated network interface.
+	 */
+	public static final String APGAS_INTERFACE = "apgas.interface";
 
-  /**
-   * Name of the serialization framework to instantiate (String property).
-   * <p>
-   * Currently "{@code java}" and "{@code kryo}" are supported. Defaults to
-   * "{@code kryo}".
-   *
-   */
-  public static final String APGAS_SERIALIZATION = "apgas.serialization";
+	/**
+	 * Reduces the number of threads used by Hazelcast if set (Boolean property).
+	 */
+	public static final String APGAS_COMPACT = "apgas.compact";
 
-  /**
-   * Specifies the java command to run for spawning places (String property).
-   * <p>
-   * Defaults to "{@code java}".
-   */
-  public static final String APGAS_JAVA = "apgas.java";
+	/**
+	 * Name of the serialization framework to instantiate (String property).
+	 * <p>
+	 * Currently "{@code java}" and "{@code kryo}" are supported. Defaults to
+	 * "{@code kryo}".
+	 *
+	 */
+	public static final String APGAS_SERIALIZATION = "apgas.serialization";
 
-  /**
-   * Name of the finish implementation class to instantiate (String property).
-   * <p>
-   * Defaults to "{@code apgas.impl.DefaultFinish}" or "
-   * {@code apgas.impl.ResilientFinish}".
-   */
-  public static final String APGAS_FINISH = "apgas.finish";
+	/**
+	 * Specifies the java command to run for spawning places (String property).
+	 * <p>
+	 * Defaults to "{@code java}".
+	 */
+	public static final String APGAS_JAVA = "apgas.java";
 
-  /**
-   * Name of the launcher implementation class to instantiate (String property).
-   * <p>
-   * Defaults to "{@code apgas.impl.SShLauncher}".
-   */
-  public static final String APGAS_LAUNCHER = "apgas.launcher";
+	/**
+	 * Name of the finish implementation class to instantiate (String property).
+	 * <p>
+	 * Defaults to "{@code apgas.impl.DefaultFinish}" or "
+	 * {@code apgas.impl.ResilientFinish}".
+	 */
+	public static final String APGAS_FINISH = "apgas.finish";
+
+	/**
+	 * Name of the launcher implementation class to instantiate (String property).
+	 * <p>
+	 * Defaults to "{@code apgas.impl.SShLauncher}".
+	 */
+	public static final String APGAS_LAUNCHER = "apgas.launcher";
 }
