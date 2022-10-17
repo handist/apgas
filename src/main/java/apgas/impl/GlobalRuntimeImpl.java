@@ -273,9 +273,9 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 				final Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
 				while (networkInterfaces.hasMoreElements()) {
 					final NetworkInterface ni = networkInterfaces.nextElement();
-					System.err.println("Considering interface " + ni.getDisplayName());
+//					System.err.println("Considering interface " + ni.getDisplayName());
 					if (!ni.getDisplayName().equals(designatedInterface)) {
-						System.err.println("Skipping " + ni.getDisplayName() + " interface");
+//						System.err.println("Skipping " + ni.getDisplayName() + " interface");
 						continue;
 					}
 
@@ -292,7 +292,7 @@ public final class GlobalRuntimeImpl extends GlobalRuntime {
 				if (ip == null) {
 					// Could not find the specified interface, print a warning
 					System.err.println("[APGAS] Could not find specified interface " + designatedInterface
-							+ ", resorting to default selection method");
+							+ ", switching to default selection method");
 				}
 			}
 
