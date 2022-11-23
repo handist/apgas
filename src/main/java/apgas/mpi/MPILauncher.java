@@ -63,6 +63,11 @@ final public class MPILauncher implements Launcher {
 	static int commRank;
 	/** Number of places in the system */
 	static int commSize;
+	/**
+	 * boolean flag to prevent the runtime to call method
+	 * {@link #mpiCustomFinalize(int, Comm)} twice
+	 */
+	static boolean finalizedCalled = false;
 
 	static List<Plugin> plugins = new ArrayList<>();
 	/**
@@ -221,12 +226,15 @@ final public class MPILauncher implements Launcher {
 
 	}
 
-	public static void mpiCustomFinalize(int rank, Comm world) throws MPIException {
-		java.util.Collections.reverse(plugins);
-		for (Plugin plugin : plugins) {
-			plugin.beforeFinalize(rank, world);
+	public synchronized static void mpiCustomFinalize(int rank, Comm world) throws MPIException {
+		if (!finalizedCalled) {
+			java.util.Collections.reverse(plugins);
+			for (Plugin plugin : plugins) {
+				plugin.beforeFinalize(rank, world);
+			}
+			MPI.Finalize();
+			finalizedCalled = true;
 		}
-		MPI.Finalize();
 	}
 
 	public static void mpiCustomSetup(int rank, Comm world) throws MPIException {
@@ -387,11 +395,9 @@ final public class MPILauncher implements Launcher {
 	@Override
 	public void shutdown() {
 		try {
-			MPI.Finalize();
-		} catch (final MPIException e) {
-			System.err.println("[MPILauncher] Error on Shutdown at rank " + commRank);
+			mpiCustomFinalize(commRank, MPI.COMM_WORLD);
+		} catch (MPIException e) {
 			e.printStackTrace();
 		}
-		System.exit(0);
 	}
 }
